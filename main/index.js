@@ -1,23 +1,36 @@
-const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const certPath = path.join(__dirname, '../certs/cert.pem');
-const keyPath = path.join(__dirname, '../certs/key.pem');
-const credentials = {
-    key: fs.readFileSync(keyPath),
-    cert: fs.readFileSync(certPath)
-};
-const server = https.createServer(credentials);
+const ngrok = require('@ngrok/ngrok');
 const Corrosion = require('../lib/server');
+
 const proxy = new Corrosion({
     codec: 'xor',
-    prefix: '/proxy/',
-    forceHttps: true
+    prefix: '/proxy/'
 });
 
 proxy.bundleScripts();
 
-server.on('request', (request, response) => {
-    if (request.url.startsWith(proxy.prefix)) return proxy.request(request, response);
-    response.end(fs.readFileSync(__dirname + '/index.html', 'utf-8'));
-}).on('upgrade', (clientRequest, clientSocket, clientHead) => proxy.upgrade(clientRequest, clientSocket, clientHead)).listen(process.env.PORT || 8080);
+const server = http.createServer((request, response) => {
+    if (request.url.startsWith(proxy.prefix)) {
+        return proxy.request(request, response);
+    }
+    response.writeHead(200, { 'Content-Type': 'text/html' });
+    response.end(fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'));
+});
+
+server.on('upgrade', (clientRequest, clientSocket, clientHead) => proxy.upgrade(clientRequest, clientSocket, clientHead));
+
+// Start server
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, async () => {
+    console.log(`Node.js web server at ${PORT} is running...`);
+
+    // Connect to ngrok
+    try {
+        const listener = await ngrok.connect({ addr: PORT, authtoken_from_env: true });
+        console.log(`Ingress established at: ${listener.url()}`);
+    } catch (err) {
+        console.error('Failed to establish ngrok tunnel:', err);
+    }
+});
