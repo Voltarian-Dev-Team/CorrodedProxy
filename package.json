@@ -7,7 +7,7 @@
     "selfsigned": "^3.0.1",
     "webpack": "^5.101.3"
   },
-  "name": "corrosion",
+  "name": "corroded",
   "version": "1.0.0",
   "main": "lib/server/index.js",
   "directories": {

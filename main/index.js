@@ -8,8 +8,8 @@ const credentials = {
     cert: fs.readFileSync(certPath)
 };
 const server = https.createServer(credentials);
-const Corrosion = require('../lib/server');
-const proxy = new Corrosion({
+const Corroded = require('../lib/server');
+const proxy = new Corroded({
     codec: 'xor',
     prefix: '/proxy/',
     forceHttps: true
